@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Kaiyongi Edwin | Geospatial Engineering Student</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-body: #fefcf9;
+      --bg-surface: #ffffff;
+      --text-primary: #1e2a2e;
+      --text-secondary: #4a5b56;
+      --border: #e0eae5;
+      --primary: #0f6e5c;
+      --primary-dark: #0a5546;
+      --primary-light: #d2ece4;
+      --secondary: #f57c00;
+      --hero-gradient: linear-gradient(125deg, #fff7ed 0%, #e6f4ef 100%);
+      --badge-bg: #e0ede8;
+      --tag-bg: #eef3f0;
+    }
+
+    body.dark {
+      --bg-body: #121212;
+      --bg-surface: #1e2a2a;
+      --text-primary: #e6edea;
+      --text-secondary: #b0c4bc;
+      --border: #2d3e3a;
+      --primary: #2a9d8f;
+      --primary-dark: #1f776b;
+      --primary-light: #2d4a44;
+      --secondary: #ffb74d;
+      --hero-gradient: linear-gradient(125deg, #1e2a2a 0%, #0f2c26 100%);
+      --badge-bg: #2a423c;
+      --tag-bg: #2a3d38;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-body);
+      color: var(--text-primary);
+      transition: background 0.2s, color 0.2s;
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+
+    nav {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 1rem 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .logo {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      color: var(--primary);
+    }
+    .logo i { color: var(--secondary); margin-right: 6px; }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+      align-items: center;
+    }
+    .nav-links a {
+      text-decoration: none;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+    .nav-links a:hover { color: var(--primary); }
+    .dark-toggle, .login-btn {
+      background: var(--primary-light);
+      border: none;
+      padding: 0.4rem 0.9rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .logout-btn {
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 0.4rem 0.9rem;
+      border-radius: 2rem;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      padding: 0.7rem 1.5rem;
+      border-radius: 40px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+    .hero {
+      background: var(--hero-gradient);
+      padding: 3rem 0 3.5rem;
+    }
+    .hero-grid {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 2rem;
+    }
+    .hero-content { flex: 1.2; }
+    .hero-badge {
+      background: var(--badge-bg);
+      color: var(--primary);
+      display: inline-flex;
+      padding: 0.2rem 1rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.8rem;
+    }
+    .hero-content h1 {
+      font-size: 2.5rem;
+      font-family: 'Poppins', sans-serif;
+      line-height: 1.2;
+      margin-bottom: 0.3rem;
+    }
+    .typing-wrapper {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--secondary);
+      min-height: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .hero-desc {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin: 0.8rem 0 1.2rem;
+      max-width: 550px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+    .stat-number {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .hero-icon {
+      flex: 0.7;
+      text-align: center;
+    }
+    .hero-icon i { font-size: 6rem; color: var(--primary-light); }
+
+    .profile-section, .service-card, .research-card, .contact-card, .gis-playground, .private-area, .blog-card, .resource-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
+    }
+    .profile-pic { text-align: center; }
+    .profile-pic img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary); }
+    .private-area { display: none; border: 2px solid var(--secondary); }
+    .private-area.visible { display: block; }
+    .doc-item, .post-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; border-bottom: 1px solid var(--border); }
+    .btn-download, .btn-edit, .btn-delete {
+      background: var(--tag-bg);
+      border: none;
+      padding: 0.3rem 1rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .btn-delete { background: #ffebee; color: #c62828; }
+    .btn-delete:hover { background: #ffcdd2; }
+    .map-layer-toggle { display: flex; gap: 0.8rem; margin-bottom: 1rem; }
+    .layer-btn { background: var(--tag-bg); border: none; padding: 0.4rem 1rem; border-radius: 2rem; cursor: pointer; }
+    #gisMap { height: 400px; width: 100%; border-radius: 1rem; margin: 1rem 0; }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg-surface);
+      padding: 2rem;
+      border-radius: 2rem;
+      width: 90%;
+      max-width: 500px;
+    }
+    .modal-content input, .modal-content textarea { width: 100%; padding: 0.8rem; margin: 0.5rem 0; border-radius: 1rem; border: 1px solid var(--border); }
+    .close-modal { float: right; font-size: 1.5rem; cursor: pointer; }
+    footer { background: var(--primary-dark); color: white; text-align: center; padding: 2rem; margin-top: 2rem; }
+    .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s, transform 0.6s; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 780px) {
+      .hero-content h1 { font-size: 2rem; }
+      .container { padding: 0 1.5rem; }
+      .nav-container { flex-direction: column; gap: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <div class="nav-container">
+    <div class="logo"><i class="fas fa-map-marked-alt"></i> Kaiyongi.Geo</div>
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li><li><a href="#services">Services</a></li><li><a href="#research">Research</a></li>
+      <li><a href="#gis">GIS Tools</a></li><li><a href="#blog">Blog</a></li><li><a href="#resources">Resources</a></li><li><a href="#contact">Contact</a></li>
+      <li><button class="dark-toggle" id="darkModeToggle"><i class="fas fa-moon"></i></button></li>
+      <li><button class="login-btn" id="loginBtn"><i class="fas fa-lock"></i> Login</button></li>
+      <li><button class="logout-btn" id="logoutBtn" style="display:none;">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section id="home" class="hero">
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <div class="hero-badge"><i class="fas fa-map-marker-alt"></i> Nairobi • Worldwide • Field & Remote</div>
+      <h1>Kaiyongi Edwin<br><span style="color:var(--secondary);">Learning Geospatial Intelligence</span></h1>
+      <div class="typing-wrapper" id="typingElement">GIS & Surveying Student</div>
+      <p class="hero-desc"><strong>Geospatial Engineering student | Surveying enthusiast | Renewable energy researcher</strong><br>Documenting my journey in precision surveying, GIS analytics, and wind energy studies — sharing what I learn, one project at a time.</p>
+      <div class="hero-stats">
+        <div><span class="stat-number" data-count="42">0</span><br>Land surveys</div>
+        <div><span class="stat-number" data-count="15">0</span><br>GIS projects</div>
+        <div><span class="stat-number" data-count="100">0</span><br>Precision focus</div>
+      </div>
+    </div>
+    <div class="hero-icon"><i class="fas fa-draw-polygon"></i></div>
+  </div>
+</section>
+
+<!-- Profile Section - no year/graduation -->
+<div class="container">
+  <div class="profile-section fade-up">
+    <div class="profile-pic"><img src="Edwin" alt="Kaiyongi Edwin"></div>
+    <div class="profile-info"><h2><i class="fas fa-user"></i> Kaiyongi Edwin Mwenda</h2><p><strong>Geospatial Engineering Student | University of Nairobi</strong><br>Passionate about using spatial technology to solve energy and environmental challenges in Kenya. Experienced in GNSS surveying, remote sensing, and wind flow modeling (WAsP). I share my projects, research, and learning resources here.</p><p><i class="fas fa-map-marker-alt"></i> Nairobi, Kenya | <i class="fas fa-trophy"></i> Renewable Energy Research | <i class="fas fa-graduation-cap"></i> Geospatial Engineering</p></div>
+  </div>
+</div>
+
+<section id="services"><div class="container"><div class="section-title"><span>⚡ What I practice & learn</span></div><div class="services-grid" style="display:flex; gap:1.5rem; flex-wrap:wrap;"><div class="service-card fade-up" style="flex:1;"><i class="fas fa-ruler-combined" style="font-size:2rem; color:var(--primary);"></i><h3>Land Surveying</h3><p>RTK GNSS, boundary determination, cadastral mapping</p></div><div class="service-card fade-up" style="flex:1;"><i class="fas fa-map" style="font-size:2rem; color:var(--primary);"></i><h3>GIS Analysis</h3><p>Spatial modeling, wind farm suitability, environmental analysis</p></div><div class="service-card fade-up" style="flex:1;"><i class="fas fa-drone" style="font-size:2rem; color:var(--primary);"></i><h3>Drone Mapping</h3><p>Orthomosaics, volumetric surveys, DEM generation</p></div></div></div></section>
+
+<section id="research"><div class="container"><div class="section-title"><span>🌬️ Research: Ngong Hills Wind Project</span></div><div class="research-card fade-up"><p>GNSS surveying, Sentinel-2, WAsP simulation identified wake effect (18% loss) and policy gaps. <a href="#" id="publicDownloadLink" style="color:var(--primary);">Download public abstract (PDF)</a></p></div></div></section>
+
+<section id="gis"><div class="container"><div class="section-title"><span>🗺️ GIS Playground (Interactive)</span></div><div class="gis-playground fade-up"><div class="map-layer-toggle"><button class="layer-btn" id="satelliteBtn">Satellite</button><button class="layer-btn" id="streetsBtn">Streets</button></div><div id="gisMap"></div><div class="gis-tools"><button id="drawPolygonBtn" class="btn-primary" style="padding:0.5rem 1rem;"><i class="fas fa-draw-polygon"></i> Draw Polygon</button><button id="clearDrawBtn" class="btn-outline" style="padding:0.5rem 1rem;">Clear</button><div class="area-result" id="areaResult">Area: --</div></div><p class="section-sub">Draw a polygon to calculate area – learning spatial analysis interactively.</p></div></div></section>
+
+<!-- Blog Section - with working delete -->
+<section id="blog"><div class="container"><div class="section-title"><span>📝 My Learning Blog</span></div><div id="blogPostsContainer" class="blog-list"></div><div id="adminBlogPanel" style="display:none; margin-top:2rem;"><h3>Admin: Share what you've learned</h3><input type="text" id="postTitle" placeholder="Title"><textarea id="postContent" rows="3" placeholder="Content (what you learned, field notes, reflections)"></textarea><input type="text" id="postImageUrl" placeholder="Image URL (optional)"><input type="text" id="postVideoUrl" placeholder="Video URL (YouTube/Vimeo, optional)"><button id="createPostBtn" class="btn-primary">Publish Post</button></div></div></section>
+
+<section id="resources"><div class="container"><div class="section-title"><span>📂 Learning Resources & Downloads</span></div><div id="publicResourcesList" class="resource-list"></div></div></section>
+
+<div class="container"><div id="privateDocsArea" class="private-area"><h3><i class="fas fa-file-secret"></i> Admin Panel: Upload Learning Resources</h3><p>Upload files (PDF, lecture notes, datasets) that will appear in the public Resources section.</p><input type="file" id="fileUploadInput" multiple><button id="uploadFilesBtn" class="btn-primary" style="margin-top:1rem;">Upload File(s)</button><div id="adminDocList" class="doc-list" style="margin-top:1rem;"></div></div></div>
+
+<section id="contact"><div class="container"><div class="section-title"><span>📡 Let's connect & learn together</span></div><div class="contact-grid" style="display:flex; gap:2rem; flex-wrap:wrap;"><div class="contact-card fade-up" style="flex:1;"><h3>Direct Contact</h3><p><i class="fas fa-envelope"></i> edwin.kaiyongi@uonbi.ac.ke</p><p><i class="fas fa-phone"></i> +254 712 345 678</p><p><i class="fab fa-whatsapp"></i> +254 712 345 678 (WhatsApp)</p><div class="contact-social"><a href="#"><i class="fab fa-linkedin"></i></a><a href="#"><i class="fab fa-github"></i></a><a href="#"><i class="fab fa-twitter"></i></a></div></div><div class="contact-card fade-up" style="flex:1;"><h3>Send a Message</h3><form onsubmit="alert('Thank you! I will respond within 24 hours.'); return false;"><input type="text" placeholder="Name" required><input type="email" placeholder="Email"><textarea rows="3" placeholder="Project details / inquiry / collaboration"></textarea><button type="submit" class="btn-primary">Send Message</button></form></div></div></div></section>
+
+<footer><p>Kaiyongi Edwin — Sharing my geospatial engineering journey | Renewable Energy | Land Surveying</p><p>© 2026 | Developed by veloce Tech company</p></footer>
+
+<div id="loginModal" class="modal"><div class="modal-content"><span class="close-modal" id="closeModal">&times;</span><h3>Admin Login</h3><p style="font-size:0.9rem;">Enter credentials to manage blog posts and upload learning resources.</p><input type="text" id="loginUsername" placeholder="Username"><input type="password" id="loginPassword" placeholder="Password"><button id="doLogin" class="btn-primary">Login</button></div></div>
+
+<script>
+  // --- localStorage keys ---
+  const STORAGE_KEYS = { BLOG: 'kaiyongi_blog_posts', RESOURCES: 'kaiyongi_public_resources' };
+  let loggedIn = false;
+  const ADMIN_USER = "kaiyongi";
+  const ADMIN_PASS = "geo2026";
+
+  function saveBlogPosts(posts) { localStorage.setItem(STORAGE_KEYS.BLOG, JSON.stringify(posts)); }
+  function loadBlogPosts() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.BLOG) || '[]'); }
+  function saveResources(res) { localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(res)); }
+  function loadResources() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.RESOURCES) || '[]'); }
+
+  // Helper: escape HTML
+  function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+  function getEmbedUrl(url) {
+    if (!url) return '';
+    if (url.includes('youtube.com/watch')) return url.replace('watch?v=', 'embed/');
+    if (url.includes('youtu.be')) return `https://www.youtube.com/embed/${url.split('/').pop()}`;
+    if (url.includes('vimeo.com')) return `https://player.vimeo.com/video/${url.split('/').pop()}`;
+    return url;
+  }
+
+  // Render blog posts with working delete/edit buttons (event delegation)
+  function renderBlog() {
+    const container = document.getElementById('blogPostsContainer');
+    const posts = loadBlogPosts();
+    if (!posts.length) { container.innerHTML = '<p>No posts yet. Login to share what you\'ve learned.</p>'; return; }
+    container.innerHTML = posts.map(post => `
+      <div class="blog-card" data-post-id="${post.id}" style="margin-bottom:1.5rem; background:var(--bg-surface); border-radius:1.5rem; padding:1.5rem;">
+        <h3>${escapeHtml(post.title)}</h3>
+        <small>${new Date(post.date).toLocaleDateString()}</small>
+        <p>${escapeHtml(post.content)}</p>
+        ${post.imageUrl ? `<img src="${post.imageUrl}" style="max-width:100%; border-radius:1rem; margin-top:0.5rem;">` : ''}
+        ${post.videoUrl ? `<div style="margin-top:0.5rem;"><iframe width="100%" height="250" src="${getEmbedUrl(post.videoUrl)}" frameborder="0" allowfullscreen></iframe></div>` : ''}
+        ${loggedIn ? `<div style="margin-top:1rem;">
+          <button class="btn-edit" data-id="${post.id}">Edit</button>
+          <button class="btn-delete" data-id="${post.id}">Delete</button>
+        </div>` : ''}
+      </div>
+    `).join('');
+
+    // Attach event listeners if logged in (using event delegation on container)
+    if (loggedIn) {
+      container.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.removeEventListener('click', handleEdit);
+        btn.addEventListener('click', handleEdit);
+      });
+      container.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.removeEventListener('click', handleDelete);
+        btn.addEventListener('click', handleDelete);
+      });
+    }
+  }
+
+  function handleEdit(e) {
+    const id = parseInt(e.currentTarget.getAttribute('data-id'));
+    const posts = loadBlogPosts();
+    const post = posts.find(p => p.id === id);
+    if (post) {
+      document.getElementById('postTitle').value = post.title;
+      document.getElementById('postContent').value = post.content;
+      document.getElementById('postImageUrl').value = post.imageUrl || '';
+      document.getElementById('postVideoUrl').value = post.videoUrl || '';
+      deletePost(id);  // delete old then create edited version
+    }
+  }
+
+  function handleDelete(e) {
+    const id = parseInt(e.currentTarget.getAttribute('data-id'));
+    if (confirm('Delete this post permanently?')) {
+      deletePost(id);
+    }
+  }
+
+  function deletePost(id) {
+    let posts = loadBlogPosts().filter(p => p.id !== id);
+    saveBlogPosts(posts);
+    renderBlog();
+  }
+
+  function createPost(title, content, imageUrl, videoUrl) {
+    if (!title.trim()) return alert('Title is required');
+    let posts = loadBlogPosts();
+    let newPost = { id: Date.now(), title, content, imageUrl, videoUrl, date: new Date().toISOString() };
+    posts.unshift(newPost);
+    saveBlogPosts(posts);
+    renderBlog();
+    // Clear form
+    document.getElementById('postTitle').value = '';
+    document.getElementById('postContent').value = '';
+    document.getElementById('postImageUrl').value = '';
+    document.getElementById('postVideoUrl').value = '';
+  }
+
+  // Public resources rendering
+  function renderPublicResources() {
+    const resources = loadResources();
+    const container = document.getElementById('publicResourcesList');
+    if (!resources.length) { container.innerHTML = '<p>No resources yet. Admin can upload files.</p>'; return; }
+    container.innerHTML = resources.map(res => `<div class="resource-card" style="display:flex; justify-content:space-between; align-items:center;"><span><i class="fas fa-file"></i> ${escapeHtml(res.name)}</span><a href="${res.dataUrl}" download="${res.name}" class="btn-download">Download</a></div>`).join('');
+  }
+
+  function renderAdminDocList() {
+    const resources = loadResources();
+    const container = document.getElementById('adminDocList');
+    if (!container) return;
+    container.innerHTML = resources.map((res, idx) => `<div class="doc-item"><span>${escapeHtml(res.name)}</span><button class="btn-delete-doc" data-res-index="${idx}">Remove</button></div>`).join('');
+    document.querySelectorAll('.btn-delete-doc').forEach(btn => btn.addEventListener('click', (e) => {
+      let index = parseInt(btn.dataset.resIndex);
+      let res = loadResources();
+      res.splice(index,1);
+      saveResources(res);
+      renderAdminDocList();
+      renderPublicResources();
+    }));
+  }
+
+  // File upload
+  document.getElementById('uploadFilesBtn')?.addEventListener('click', () => {
+    if (!loggedIn) { alert('Login required to upload documents.'); return; }
+    const files = document.getElementById('fileUploadInput').files;
+    if (!files.length) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        let resources = loadResources();
+        resources.push({ name: file.name, dataUrl: e.target.result, type: file.type, uploadedAt: Date.now() });
+        saveResources(resources);
+        renderAdminDocList();
+        renderPublicResources();
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('fileUploadInput').value = '';
+  });
+
+  document.getElementById('createPostBtn')?.addEventListener('click', () => {
+    if (!loggedIn) { alert('Login to create blog posts.'); return; }
+    let title = document.getElementById('postTitle').value;
+    let content = document.getElementById('postContent').value;
+    let img = document.getElementById('postImageUrl').value;
+    let vid = document.getElementById('postVideoUrl').value;
+    createPost(title, content, img, vid);
+  });
+
+  // Login / Logout
+  const modal = document.getElementById('loginModal');
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const privateArea = document.getElementById('privateDocsArea');
+  const adminBlogPanel = document.getElementById('adminBlogPanel');
+  const closeModal = document.getElementById('closeModal');
+  function checkSession() {
+    if (sessionStorage.getItem('loggedIn') === 'true') {
+      loggedIn = true;
+      privateArea.classList.add('visible');
+      if(adminBlogPanel) adminBlogPanel.style.display = 'block';
+      loginBtn.style.display = 'none';
+      logoutBtn.style.display = 'inline-block';
+      renderAdminDocList();
+      renderBlog();
+    } else {
+      loggedIn = false;
+      privateArea.classList.remove('visible');
+      if(adminBlogPanel) adminBlogPanel.style.display = 'none';
+      loginBtn.style.display = 'inline-block';
+      logoutBtn.style.display = 'none';
+      renderBlog();
+    }
+  }
+  loginBtn.onclick = () => { modal.style.display = 'flex'; };
+  closeModal.onclick = () => { modal.style.display = 'none'; };
+  window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+  document.getElementById('doLogin').addEventListener('click', () => {
+    const user = document.getElementById('loginUsername').value;
+    const pass = document.getElementById('loginPassword').value;
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+      sessionStorage.setItem('loggedIn', 'true');
+      modal.style.display = 'none';
+      checkSession();
+      alert('Login successful. You can now manage blog and upload resources.');
+    } else alert('Invalid credentials.');
+  });
+  logoutBtn.addEventListener('click', () => { sessionStorage.removeItem('loggedIn'); checkSession(); alert('Logged out.'); });
+
+  document.getElementById('publicDownloadLink')?.addEventListener('click', (e) => { e.preventDefault(); const blob = new Blob(["Ngong Hills Wind Project Abstract: GNSS, WAsP, wake effect analysis."], {type:'application/pdf'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Ngong_Wind_Abstract.pdf"; a.click(); URL.revokeObjectURL(a.href); });
+
+  // Typing animation
+  const roles = ["GIS & Surveying Student", "Learning Geospatial Tech", "Sharing my journey", "Future Land Surveyor"];
+  let idx=0, ch=0, del=false;
+  const typeEl=document.getElementById("typingElement");
+  function type() { const cur=roles[idx]; if(del) typeEl.textContent=cur.substring(0,ch-1), ch--; else typeEl.textContent=cur.substring(0,ch+1), ch++; if(!del && ch===cur.length){ del=true; setTimeout(type,1500); return; } if(del && ch===0){ del=false; idx=(idx+1)%roles.length; setTimeout(type,200); return; } setTimeout(type, del?50:100); }
+  type();
+
+  // Count-up stats
+  const statNumbers=document.querySelectorAll('.stat-number');
+  let counted=false; new IntersectionObserver((e)=>{ if(e[0].isIntersecting && !counted){ statNumbers.forEach(el=>{ const target=parseInt(el.dataset.count); let curr=0; const inc=target/50; function upd(){ curr+=inc; if(curr<target){ el.textContent=Math.floor(curr); requestAnimationFrame(upd); } else el.textContent=target; } upd(); }); counted=true; } },{threshold:0.5}).observe(document.querySelector('.hero-stats'));
+  new IntersectionObserver((e)=>{ e.forEach(entry=>{ if(entry.isIntersecting) entry.target.classList.add('visible'); }); },{threshold:0.1}).querySelectorAll?.(()=>{}) ; document.querySelectorAll('.fade-up').forEach(el=>new IntersectionObserver((e)=>{ if(e[0].isIntersecting) e[0].target.classList.add('visible'); },{threshold:0.1}).observe(el));
+  const toggleBtn=document.getElementById('darkModeToggle'); toggleBtn.addEventListener('click',()=>{ document.body.classList.toggle('dark'); const i=toggleBtn.querySelector('i'); if(document.body.classList.contains('dark')) i.classList.replace('fa-moon','fa-sun'); else i.classList.replace('fa-sun','fa-moon'); });
+  let gisMap = L.map('gisMap').setView([-1.286,36.817],11);
+  let street= L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CartoDB'});
+  let sat= L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri'});
+  street.addTo(gisMap);
+  let drawnItems = L.featureGroup().addTo(gisMap);
+  let drawControl = new L.Control.Draw({ edit: { featureGroup: drawnItems }, draw: { polygon: true, rectangle: true, circle: false, polyline: false, marker: false } });
+  let isDrawActive=false;
+  document.getElementById('drawPolygonBtn').addEventListener('click',()=>{ if(!isDrawActive){ gisMap.addControl(drawControl); isDrawActive=true; }else{ gisMap.removeControl(drawControl); isDrawActive=false; } });
+  document.getElementById('clearDrawBtn').addEventListener('click',()=>{ drawnItems.clearLayers(); document.getElementById('areaResult').innerHTML="Area: --"; });
+  gisMap.on(L.Draw.Event.CREATED, function(e) { let layer=e.layer; drawnItems.addLayer(layer); if(layer.getLatLngs){ let coords=layer.getLatLngs()[0]; let poly=turf.polygon([coords.map(p=>[p.lng,p.lat])]); let area=turf.area(poly)/10000; document.getElementById('areaResult').innerHTML=`Area: ${area.toFixed(2)} hectares`; } });
+  document.getElementById('satelliteBtn').addEventListener('click',()=>{ gisMap.removeLayer(street); sat.addTo(gisMap); });
+  document.getElementById('streetsBtn').addEventListener('click',()=>{ gisMap.removeLayer(sat); street.addTo(gisMap); });
+  checkSession(); renderBlog(); renderPublicResources();
+</script>
+</body>
+</html>
